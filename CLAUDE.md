@@ -9,6 +9,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Activate venv first
 source .venv/bin/activate
 
+# Install dependencies (use requirements-dev.txt for tests)
+pip install -r requirements-dev.txt
+
 # Run the FastAPI server
 uvicorn app.main:app --reload
 
@@ -19,6 +22,8 @@ python -m pytest tests/ -v
 python -m pytest tests/test_calculations.py::test_driving_cost_irs -v
 python -m pytest tests/test_api.py::test_calculate_endpoint -v
 ```
+
+**Dependency files**: `requirements.txt` (runtime), `requirements-dev.txt` (adds pytest + httpx). When adding or upgrading a Python package, update the pinned version in the appropriate file. When adding an npm package, `package.json` and `package-lock.json` update automatically.
 
 ### Frontend
 ```bash
