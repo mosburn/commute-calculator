@@ -7,11 +7,11 @@ def default_engine():
     return CalculationEngine(
         salary=192000,
         work_weeks=45,
-        work_days_per_week=5,
         fuel_price=5.45,
         mpg_city=12,
         mpg_hwy=16,
-        irs_rate=0.67
+        irs_rate=0.67,
+        commute_days_per_week=5
     )
 
 def test_driving_cost_irs(default_engine):

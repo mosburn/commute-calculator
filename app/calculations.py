@@ -1,17 +1,18 @@
 class CalculationEngine:
-    def __init__(self, salary, work_weeks, work_days_per_week, fuel_price, mpg_city, mpg_hwy, irs_rate=0.67):
+    def __init__(self, salary, work_weeks, fuel_price, mpg_city, mpg_hwy, irs_rate=0.67, commute_days_per_week=5):
         self.salary = salary
         self.work_weeks = work_weeks
-        self.work_days_per_week = work_days_per_week
         self.fuel_price = fuel_price
         self.mpg_city = mpg_city
         self.mpg_hwy = mpg_hwy
         self.irs_rate = irs_rate
-        
-        self.annual_work_days = self.work_weeks * self.work_days_per_week
-        # Assuming 8 hour work day for hourly rate calculation
-        self.annual_work_hours = self.annual_work_days * 8
+        self.commute_days_per_week = commute_days_per_week
+
+        # Salary basis always assumes a full 5-day work week
+        self.annual_work_hours = work_weeks * 5 * 8
         self.hourly_rate = self.salary / self.annual_work_hours
+        # Commute only happens on in-office days
+        self.annual_work_days = work_weeks * commute_days_per_week
 
     def calculate_driving_costs(self, one_way_miles, use_irs_rate=True, is_highway=False):
         daily_miles = one_way_miles * 2

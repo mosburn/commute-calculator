@@ -49,11 +49,11 @@ def calculate(request: CalculateRequest, db: Session = Depends(get_db)):
     engine = CalculationEngine(
         salary=s.salary,
         work_weeks=s.work_weeks,
-        work_days_per_week=s.work_days_per_week,
         fuel_price=s.fuel_price,
         mpg_city=s.mpg_city,
         mpg_hwy=s.mpg_hwy,
-        irs_rate=s.irs_rate
+        irs_rate=s.irs_rate,
+        commute_days_per_week=s.work_days_per_week
     )
     
     if request.commute_type == "driving":
@@ -83,7 +83,7 @@ def calculate(request: CalculateRequest, db: Session = Depends(get_db)):
     
     ebike_roi = None
     if request.one_way_miles <= 25:
-        ebike_roi = engine.calculate_ebike_roi(request.one_way_miles, 4000, 100)
+        ebike_roi = engine.calculate_ebike_roi(request.one_way_miles, request.ebike_price, request.ebike_extra_costs)
         
     return {
         "annual_cost": annual_cost,

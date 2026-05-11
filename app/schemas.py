@@ -6,7 +6,7 @@ class UserSettingsSchema(BaseModel):
     
     salary: Optional[float] = None
     work_weeks: Optional[int] = None
-    work_days_per_week: Optional[int] = None
+    work_days_per_week: Optional[float] = None
     fuel_price: Optional[float] = None
     mpg_city: Optional[float] = None
     mpg_hwy: Optional[float] = None
@@ -25,6 +25,9 @@ class CalculateRequest(BaseModel):
     drive_one_way_minutes: Optional[float] = 0
     transit_daily_cost: Optional[float] = 0
     transit_one_way_minutes: Optional[float] = 0
+
+    ebike_price: Optional[float] = 4000
+    ebike_extra_costs: Optional[float] = 100
 
 class CalculateResponse(BaseModel):
     annual_cost: float

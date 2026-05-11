@@ -19,6 +19,8 @@ export interface CalculateRequest {
   drive_one_way_minutes?: number;
   transit_daily_cost?: number;
   transit_one_way_minutes?: number;
+  ebike_price?: number;
+  ebike_extra_costs?: number;
 }
 
 export interface CalculateResponse {
