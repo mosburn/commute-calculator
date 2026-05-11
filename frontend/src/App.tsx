@@ -41,6 +41,21 @@ function federalMarginalRate(salary: number): number {
   return 0.37;
 }
 
+const STANDARD_DEDUCTION_2025 = 15000;
+const BRACKET_FLOORS = [0, 11925, 48475, 103350, 197300, 250525, 626350];
+
+function calculateFederalTax(income: number): number {
+  const taxable = Math.max(0, income - STANDARD_DEDUCTION_2025);
+  let tax = 0;
+  for (let i = 0; i < FEDERAL_BRACKETS.length; i++) {
+    const floor = BRACKET_FLOORS[i];
+    const ceiling = FEDERAL_BRACKETS[i].limit;
+    if (taxable <= floor) break;
+    tax += (Math.min(taxable, ceiling) - floor) * FEDERAL_BRACKETS[i].rate;
+  }
+  return tax;
+}
+
 function App() {
   const [settings, setSettings] = useState<UserSettings>({
     salary: 192000,
@@ -259,29 +274,33 @@ function App() {
 
           <div className="space-y-4 border-t pt-6">
             <h3 className="font-semibold text-gray-700">Vehicle Config</h3>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Fuel Price ($/gal)</label>
-              <input 
-                type="number" step="0.01" name="fuel_price" value={settings.fuel_price} onChange={handleSettingChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+            {!calcParams.use_irs_rate && (
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">MPG City</label>
-                <input 
-                  type="number" name="mpg_city" value={settings.mpg_city} onChange={handleSettingChange}
+                <label className="text-sm font-medium text-gray-700">Fuel Price ($/gal)</label>
+                <input
+                  type="number" step="0.01" name="fuel_price" value={settings.fuel_price} onChange={handleSettingChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">MPG Hwy</label>
-                <input 
-                  type="number" name="mpg_hwy" value={settings.mpg_hwy} onChange={handleSettingChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-                />
+            )}
+            {!calcParams.use_irs_rate && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">MPG City</label>
+                  <input
+                    type="number" name="mpg_city" value={settings.mpg_city} onChange={handleSettingChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">MPG Hwy</label>
+                  <input
+                    type="number" name="mpg_hwy" value={settings.mpg_hwy} onChange={handleSettingChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="space-y-3 border-t pt-6">
@@ -397,6 +416,23 @@ function App() {
                         <span className="text-sm text-gray-700">Mostly Highway</span>
                       </label>
                     </div>
+                    {(() => {
+                      const annualDays = settings.work_weeks * settings.work_days_per_week;
+                      const annualMi = calcParams.one_way_miles * 2 * annualDays;
+                      const fmt = (mi: number) => settings.use_metric
+                        ? `${(mi * 1.60934).toLocaleString(undefined, { maximumFractionDigits: 0 })} km`
+                        : `${mi.toLocaleString(undefined, { maximumFractionDigits: 0 })} mi`;
+                      return (
+                        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+                          {[['Weekly', annualMi / 52], ['Monthly', annualMi / 12], ['Yearly', annualMi]].map(([label, val]) => (
+                            <div key={label as string}>
+                              <div className="text-xs text-gray-400">Avg {label} Mileage</div>
+                              <div className="text-sm font-semibold text-gray-700">{fmt(val as number)}</div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                 ) : (
                   <div className="space-y-6">
@@ -426,12 +462,29 @@ function App() {
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-600">Transit Time (one-way min)</label>
-                        <input 
+                        <input
                           type="number" name="transit_one_way_minutes" value={calcParams.transit_one_way_minutes} onChange={handleParamChange}
                           className="w-full px-4 py-2 border border-gray-300 rounded-md"
                         />
                       </div>
                     </div>
+                    {(() => {
+                      const annualDays = settings.work_weeks * settings.work_days_per_week;
+                      const annualMi = (calcParams.drive_one_way_miles ?? 0) * 2 * annualDays;
+                      const fmt = (mi: number) => settings.use_metric
+                        ? `${(mi * 1.60934).toLocaleString(undefined, { maximumFractionDigits: 0 })} km`
+                        : `${mi.toLocaleString(undefined, { maximumFractionDigits: 0 })} mi`;
+                      return (
+                        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+                          {[['Weekly', annualMi / 52], ['Monthly', annualMi / 12], ['Yearly', annualMi]].map(([label, val]) => (
+                            <div key={label as string}>
+                              <div className="text-xs text-gray-400">Avg {label} Mileage</div>
+                              <div className="text-sm font-semibold text-gray-700">{fmt(val as number)}</div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -449,19 +502,6 @@ function App() {
                   <div className="mt-2 text-lg font-semibold opacity-90">
                     {results ? formatCurrency((settings.salary + (results.annual_cost + annualParkingCost) * grossUpFactor + results.annual_time_cost) / (settings.work_weeks * 5 * 8)) : '...'} /hr
                   </div>
-                  {results && (() => {
-                    const annual = settings.salary + (results.annual_cost + annualParkingCost) * grossUpFactor + results.annual_time_cost;
-                    return (
-                      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-blue-500 pt-3">
-                        {[['Weekly', annual / 52], ['Bi-weekly', annual / 26], ['Monthly', annual / 12]].map(([label, val]) => (
-                          <div key={label as string}>
-                            <div className="text-xs opacity-70">{label}</div>
-                            <div className="text-sm font-semibold">{formatCurrency(val as number)}</div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
                   <p className="mt-3 text-sm opacity-80 leading-relaxed">
                     This is what you need to earn to break even with a remote role, factoring in all costs and time value.
                   </p>
@@ -526,6 +566,46 @@ function App() {
                         <span className="text-gray-700">True effective rate</span>
                         <span className="text-gray-900">{formatCurrency(baseRate - totalImpact)}/hr</span>
                       </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Pay Period Breakdown */}
+              {results && (() => {
+                const requiredAnnual = settings.salary + (results.annual_cost + annualParkingCost) * grossUpFactor + results.annual_time_cost;
+                const federalTax = calculateFederalTax(requiredAnnual);
+                const stateTax = requiredAnnual * (stateTaxRate / 100);
+                const totalTax = federalTax + stateTax;
+                const takeHome = requiredAnnual - totalTax;
+                const periods = [
+                  { label: 'Weekly',    divisor: 52 },
+                  { label: 'Bi-weekly', divisor: 26 },
+                  { label: 'Monthly',   divisor: 12 },
+                ];
+                return (
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <h3 className="font-bold text-gray-800 mb-1">Required Pay Breakdown</h3>
+                    <p className="text-xs text-gray-400 mb-5">Based on required salary of {formatCurrency(requiredAnnual)}/yr · 2025 federal brackets + {stateTaxRate}% state · single filer, standard deduction</p>
+                    <div className="grid grid-cols-3 gap-4">
+                      {periods.map(({ label, divisor }) => (
+                        <div key={label} className="space-y-3">
+                          <div className="text-sm font-semibold text-gray-500 uppercase tracking-wide">{label}</div>
+                          <div>
+                            <div className="text-xs text-gray-400">Gross</div>
+                            <div className="text-lg font-bold text-gray-900">{formatCurrency(requiredAnnual / divisor)}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-gray-400">Taxes</div>
+                            <div className="text-base font-semibold text-red-500">-{formatCurrency(totalTax / divisor)}</div>
+                            <div className="text-xs text-gray-400">Fed {formatCurrency(federalTax / divisor)} · State {formatCurrency(stateTax / divisor)}</div>
+                          </div>
+                          <div className="pt-2 border-t border-gray-100">
+                            <div className="text-xs text-gray-400">Take-home</div>
+                            <div className="text-lg font-bold text-emerald-600">{formatCurrency(takeHome / divisor)}</div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 );
